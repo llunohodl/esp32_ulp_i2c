@@ -29,11 +29,9 @@ extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
 extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
 
 
-const gpio_num_t gpio_led = GPIO_NUM_2;
-const gpio_num_t gpio_scl = GPIO_NUM_32;
-const gpio_num_t gpio_sda = GPIO_NUM_33;
-//const gpio_num_t gpio_builtin = GPIO_NUM_22;
-
+const gpio_num_t gpio_led = GPIO_NUM_21;
+const gpio_num_t gpio_scl = GPIO_NUM_5;
+const gpio_num_t gpio_sda = GPIO_NUM_18;
 
 static void init_ulp_program()
 {
