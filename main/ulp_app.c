@@ -74,6 +74,7 @@ static void init_ulp_program()
     /* Configure ADC channel */
     /* Note: when changing channel here, also change 'adc_channel' constant
        in adc.S */
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11);
     adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11);
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_ulp_enable();
@@ -102,6 +103,10 @@ static void init_ulp_program()
 #define l_b ((uint16_t)ulp_l_b)
 #define l_i ((uint16_t)ulp_l_i)
 #define t_cur ((uint16_t)ulp_t_cur)
+#define r_hi ((uint16_t)ulp_r_hi)
+#define r_lo ((uint16_t)ulp_r_lo)
+#define v_hi ((uint16_t)ulp_v_hi)
+#define v_lo ((uint16_t)ulp_v_lo)
 
 static void print_status(){
     ESP_LOGI(TAG, "C: %06d IR: %06d", l_clr, l_i);
@@ -113,7 +118,8 @@ static void print_status(){
     }
     tm*=5;
     ESP_LOGI(TAG, "T: %0.1f", ((float )tm) / 10.0);
-    ESP_LOGI(TAG,"Rhi %d Rlo %d (%d)",ulp_r_hi,ulp_r_lo,ulp_adc_res);
+    ESP_LOGI(TAG,"Rhi %d Rlo %d",r_hi,r_lo);
+    ESP_LOGI(TAG,"Vhi %d Vlo %d",v_hi,v_lo);
 }
 
 void app_main()

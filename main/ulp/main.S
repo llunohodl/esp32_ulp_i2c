@@ -33,10 +33,12 @@ stack:
 stackEnd:
 	.long 0
 
-	.global r_hi, r_lo
+	.global r_hi, r_lo, v_hi, v_lo
 
 r_hi: .long 0
 r_lo: .long 0
+v_hi: .long 0
+v_lo: .long 0
 
 	/* Code goes into .text section */
 	.text
@@ -73,7 +75,8 @@ entry:
 	psr
 	jump performADC
 
-	save_dat adc_res,r_hi,0
+	save_dat adc_res_1,r_hi,0
+	save_dat adc_res_2,v_hi,0
 
 	//Select 390||10kOhm on high side
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_RLO, 1, 0)
@@ -85,7 +88,8 @@ entry:
 	psr
 	jump performADC
 
-	save_dat adc_res,r_lo,0
+	save_dat adc_res_1,r_lo,0
+	save_dat adc_res_2,v_lo,0
 
 
 	// Wait 200ms for sensor computation

@@ -8,53 +8,51 @@
 
 #include "stack.S"
 
-	/* ADC1 channel 7, GPIO35 */
-	.set adc_channel, 7
+/* ADC1 channel 7, GPIO35 */
+.set adc_ch1, 7
+/* ADC1 channel 6, GPIO34 */
+.set adc_ch2, 6
 
-	/* Configure the number of ADC samples to average on each measurement.
-	   For convenience, make it a power of 2. */
-	.set adc_oversampling_factor_log, 2
-	.set adc_oversampling_factor, (1 << adc_oversampling_factor_log)
+/* Configure the number of ADC samples to average on each measurement.
+   For convenience, make it a power of 2. */
+.set adc_oversampling_factor_log, 4
+.set adc_oversampling_factor, (1 << adc_oversampling_factor_log)
 
 	/* Define variables, which go into .bss section (zero-initialized data) */
 	.bss
 
-	/* Counter of measurements done */
-	.global sample_counter
-sample_counter:
-	.long 0
-
-	.global adc_res
-adc_res:
-	.long 0
+	.global adc_res_1,adc_res_2
+adc_res_1: .long 0
+adc_res_2: .long 0
 
 	/* Code goes into .text section */
 	.text
 	.global performADC
 performADC:
-	/* increment sample counter */
-	move r1, sample_counter
-	ld r2, r1, 0
-	add r2, r2, 1
-	st r2, r1, 0
 
 	/* do measurements using ADC */
-	/* r0 will be used as accumulator */
-	move r0, 0
+	/* r1/r2 will be used as accumulators */
+	move r1, 0
+	move r2, 0
 	/* initialize the loop counter */
 	stage_rst
 measure:
 	/* measure and add value to accumulator */
-	adc r1, 0, adc_channel + 1
-	add r0, r0, r1
+	adc r0, 0, adc_ch1 + 1
+	add r1, r1, r0
+	adc r0, 0, adc_ch2 + 1
+	add r2, r2, r0
 	/* increment loop counter and check exit condition */
 	stage_inc 1
 	jumps measure, adc_oversampling_factor, lt
 
-	/* divide accumulator by adc_oversampling_factor.
+	/* divide accumulators by adc_oversampling_factor.
 	   Since it is chosen as a power of two, use right shift */
-	rsh r0, r0, adc_oversampling_factor_log
-	/* averaged value is now in r0; store it into adc_res */
-	move r1, adc_res
-	st r0, r1, 0
+	rsh r1, r1, adc_oversampling_factor_log
+	rsh r2, r2, adc_oversampling_factor_log
+	/* averaged value is now in r1/r2; store it into adc_res_1 */
+	move r0, adc_res_1
+	st r1, r0, 0
+	move r0, adc_res_2
+	st r2, r0, 0
 	ret
