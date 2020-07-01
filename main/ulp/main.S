@@ -11,9 +11,17 @@
 
 #define GPIO_LED          12 // RTC_GPIO_12 == GPIO_2
 #define GPIO_AON          14 // RTC_GPIO_14 == GPIO_13
+
 #define GPIO_S0           15 // RTC_GPIO_15 == GPIO_12
 #define GPIO_S1           16 // RTC_GPIO_16 == GPIO_14
+#define GPIO_RLO          17 // RTC_GPIO_15 == GPIO_27
 
+.macro save_dat from to offset
+	move r2,\from
+	ld r1,r2,0
+	move r2,\to
+	st r1,r2,\offset
+.endm
 
 /* Define variables, which go into .bss section (zero-initialized data) */
 	.bss
@@ -25,6 +33,10 @@ stack:
 stackEnd:
 	.long 0
 
+	.global r_hi, r_lo
+
+r_hi: .long 0
+r_lo: .long 0
 
 	/* Code goes into .text section */
 	.text
@@ -36,9 +48,10 @@ entry:
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_AON, 1, 0)
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_LED, 1, 1)
 	// Wait 5ms for sensor computation
-	move r2,10
+	move r2,5
 	psr
 	jump waitMs
+
     WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_LED, 1, 0)
 
 	psr
@@ -47,9 +60,36 @@ entry:
 	psr
 	jump startSTLM
 
+	//Select in 74HC4051
+	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_S0, 1, 0)
+	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_S1, 1, 0)
+	//Select 390kOhm on high side
+	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_RLO, 1, 1)
 
-	// Wait 150ms for sensor computation
-	move r2,210
+	move r2,5
+	psr
+	jump waitMs
+
+	psr
+	jump performADC
+
+	save_dat adc_res,r_hi,0
+
+	//Select 390||10kOhm on high side
+	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_RLO, 1, 0)
+
+	move r2,5
+	psr
+	jump waitMs
+
+	psr
+	jump performADC
+
+	save_dat adc_res,r_lo,0
+
+
+	// Wait 200ms for sensor computation
+	move r2,100
 	psr
 	jump waitMs
 
@@ -62,12 +102,28 @@ entry:
 	// GPIO2 LED OFF
 
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_AON, 1, 1)
+	jump wake_up
 
+	.global exit
+exit:
+	halt
 
+	.global wake_up
+wake_up:
+	/* Check if the system can be woken up */
+	READ_RTC_FIELD(RTC_CNTL_LOW_POWER_ST_REG, RTC_CNTL_RDY_FOR_WAKEUP)
+	and r0, r0, 1
+	jump exit, eq
 
 	/* Wake up the SoC, end program */
 	wake
+	//WRITE_RTC_FIELD(RTC_CNTL_STATE0_REG, RTC_CNTL_ULP_CP_SLP_TIMER_EN, 0)
 	halt
+
+
+	/* Wake up the SoC, end program */
+	//wake
+	//halt
 
 // Wait for r2 milliseconds
 waitMs:

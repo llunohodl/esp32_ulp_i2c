@@ -18,10 +18,12 @@
 #include "soc/soc.h"
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
+#include "driver/adc.h"
 #include "esp32/ulp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
+
 
 #include "ulp_main.h"
 
@@ -35,6 +37,11 @@ extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
 
 const gpio_num_t gpio_led = GPIO_NUM_2;
 const gpio_num_t gpio_aon = GPIO_NUM_13;
+
+const gpio_num_t gpio_s0 = GPIO_NUM_12;
+const gpio_num_t gpio_s1 = GPIO_NUM_14;
+const gpio_num_t gpio_rlo = GPIO_NUM_27;
+
 const gpio_num_t gpio_scl = GPIO_NUM_32;
 const gpio_num_t gpio_sda = GPIO_NUM_33;
 
@@ -44,6 +51,14 @@ static void init_ulp_program()
     rtc_gpio_set_direction(gpio_led, RTC_GPIO_MODE_OUTPUT_ONLY);
     rtc_gpio_init(gpio_aon);
     rtc_gpio_set_direction(gpio_aon, RTC_GPIO_MODE_OUTPUT_ONLY);
+
+    rtc_gpio_init(gpio_s0);
+    rtc_gpio_set_direction(gpio_s0, RTC_GPIO_MODE_OUTPUT_ONLY);
+    rtc_gpio_init(gpio_s1);
+    rtc_gpio_set_direction(gpio_s1, RTC_GPIO_MODE_OUTPUT_ONLY);
+    rtc_gpio_init(gpio_rlo);
+    rtc_gpio_set_direction(gpio_rlo, RTC_GPIO_MODE_OUTPUT_ONLY);
+
 
     rtc_gpio_init(gpio_scl);
     rtc_gpio_set_direction(gpio_scl, RTC_GPIO_MODE_INPUT_ONLY); //RTC_GPIO_MODE_INPUT_OUTPUT
@@ -56,10 +71,24 @@ static void init_ulp_program()
 
     esp_deep_sleep_disable_rom_logging(); // suppress boot messages
 
+    /* Configure ADC channel */
+    /* Note: when changing channel here, also change 'adc_channel' constant
+       in adc.S */
+    adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11);
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_ulp_enable();
+
+    /* Disconnect GPIO12 and GPIO15 to remove current drain through
+     * pullup/pulldown resistors.
+     * GPIO12 may be pulled high to select flash voltage.
+     */
+    rtc_gpio_isolate(GPIO_NUM_12);
+    rtc_gpio_isolate(GPIO_NUM_15);
+
     /* Set ULP wake up period to T = 20ms.
      * Minimum pulse width has to be T * (ulp_debounce_counter + 1) = 80ms.
      */
-    ulp_set_wakeup_period(0, 20000);
+    ulp_set_wakeup_period(0, 1000000);
 
     /* Start the program */
     err = ulp_run(&ulp_entry - RTC_SLOW_MEM);
@@ -74,8 +103,6 @@ static void init_ulp_program()
 #define l_i ((uint16_t)ulp_l_i)
 #define t_cur ((uint16_t)ulp_t_cur)
 
-
-
 static void print_status(){
     ESP_LOGI(TAG, "C: %06d IR: %06d", l_clr, l_i);
     ESP_LOGI(TAG, "R: %06d G: %06d B: %06d", l_r, l_g,l_b);
@@ -86,6 +113,7 @@ static void print_status(){
     }
     tm*=5;
     ESP_LOGI(TAG, "T: %0.1f", ((float )tm) / 10.0);
+    ESP_LOGI(TAG,"Rhi %d Rlo %d (%d)",ulp_r_hi,ulp_r_lo,ulp_adc_res);
 }
 
 void app_main()

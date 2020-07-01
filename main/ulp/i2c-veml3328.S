@@ -8,16 +8,26 @@
 
 #include "stack.S"
 
+.macro swap_bytes addr
+	move r2,\addr
+	ld r0,r2,0
+	ld r1,r2,0
+	lsh r0,r0,8
+	rsh r1,r1,8
+	add r0,r0,r1
+	st r0,r2,0
+.endm
 
 .set VEML3328_ADDR,0x10 // 7-bit address
 
 .set VEML3328_COMMAND_CODE,0x00
 
 //SD0/1 =  1 shutdown (default) | IT = 2 = Integration time setting 200ms
-.set VEML3328_CODE_OFF,(1<<15)|(1<<5)|(1<<0)
+.set VEML3328_CODE_OFF,(1<<15)|(2<<4)|(1<<0)
 
 //SD0/1 = 0 power on | IT = 2 = Integration time setting 200ms
-.set VEML3328_CODE_ON,(1 << 4)
+//| AF = 1 active force mode | TRIG = 1 trigger one measurement cycle
+.set VEML3328_CODE_ON,(2<<4)|(1<<3)|(1<<2)
 
 .set VEML3328_COMMAND_C,0x04
 .set VEML3328_COMMAND_R,0x05
@@ -70,6 +80,7 @@ stopVEML:
 	jumpr readR,1,ge
 	move r2,l_clr // store result
 	st r1,r2,0
+	swap_bytes l_clr
 readR:
 	// Read 16 bit result
 	move r1,VEML3328_ADDR
@@ -84,6 +95,7 @@ readR:
 	jumpr readG,1,ge
 	move r2,l_r // store result
 	st r1,r2,0
+	swap_bytes l_r
 readG:
 	// Read 16 bit result
 	move r1,VEML3328_ADDR
@@ -98,6 +110,7 @@ readG:
 	jumpr readB,1,ge
 	move r2,l_g // store result
 	st r1,r2,0
+	swap_bytes l_g
 readB:
 	// Read 16 bit result
 	move r1,VEML3328_ADDR
@@ -112,6 +125,7 @@ readB:
 	jumpr readI,1,ge
 	move r2,l_b // store result
 	st r1,r2,0
+	swap_bytes l_b
 readI:
 	// Read 16 bit result
 	move r1,VEML3328_ADDR
@@ -126,6 +140,7 @@ readI:
 	jumpr endVEML3328,1,ge
 	move r2,l_i // store result
 	st r1,r2,0
+	swap_bytes l_i
 endVEML3328:
 	move r1,VEML3328_ADDR
 	push r1
