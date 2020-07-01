@@ -72,13 +72,20 @@ static void init_ulp_program()
 #define l_g ((uint16_t)ulp_l_g)
 #define l_b ((uint16_t)ulp_l_b)
 #define l_i ((uint16_t)ulp_l_i)
-
+#define t_cur ((uint16_t)ulp_t_cur)
 
 
 
 static void print_status(){
     ESP_LOGI(TAG, "C: %06d IR: %06d", l_clr, l_i);
     ESP_LOGI(TAG, "R: %06d G: %06d B: %06d", l_r, l_g,l_b);
+    int16_t tm=t_cur;
+    tm>>=7;
+    if(tm&(1 << 8)){
+        tm |= 0xff00;
+    }
+    tm*=5;
+    ESP_LOGI(TAG, "T: %0.1f", ((float )tm) / 10.0);
 }
 
 void app_main()

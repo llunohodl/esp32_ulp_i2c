@@ -44,11 +44,17 @@ entry:
 	psr
 	jump startVEML
 
+	psr
+	jump startSTLM
+
 
 	// Wait 150ms for sensor computation
 	move r2,210
 	psr
 	jump waitMs
+
+	psr
+	jump stopSTLM
 
 	psr
 	jump stopVEML

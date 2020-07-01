@@ -13,13 +13,11 @@
 
 .set VEML3328_COMMAND_CODE,0x00
 
-//SD0/1 = 0 power on | IT = 1 = Integration time setting 200ms
+//SD0/1 =  1 shutdown (default) | IT = 2 = Integration time setting 200ms
 .set VEML3328_CODE_OFF,(1<<15)|(1<<5)|(1<<0)
 
-//SD0/1 =  1 shutdown (default) | IT = 1 = Integration time setting 100ms
+//SD0/1 = 0 power on | IT = 2 = Integration time setting 200ms
 .set VEML3328_CODE_ON,(1 << 4)
-
-
 
 .set VEML3328_COMMAND_C,0x04
 .set VEML3328_COMMAND_R,0x05
@@ -30,9 +28,6 @@
 
 /* Define variables, which go into .bss section (zero-initialized data) */
 	.bss
-
-	.global temp
-temp:	.long 0
 
 	.global l_clr, l_r, l_g, l_b, l_i
 
