@@ -6,6 +6,7 @@
 #include "soc/rtc_io_reg.h"
 #include "soc/soc_ulp.h"
 
+#include "stack.S"
 
 
 .set VEML3328_ADDR,0x10 // 7-bit address

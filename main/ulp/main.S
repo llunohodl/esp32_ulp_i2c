@@ -7,9 +7,7 @@
 #include "soc/soc_ulp.h"
 
 #include "stack.S"
-#include "i2c.S"
-#include "i2c-util.S"
-#include "i2c-veml3328.S"
+
 
 #define GPIO_LED          12 // RTC_GPIO_12 == GPIO_2
 #define GPIO_AON          14 // RTC_GPIO_14 == GPIO_13

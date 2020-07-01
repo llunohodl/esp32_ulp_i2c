@@ -6,6 +6,8 @@
 #include "soc/rtc_io_reg.h"
 #include "soc/soc_ulp.h"
 
+#include "stack.S"
+
 /*
  * =============================== I2C code ==========================================
  * Implementation of pseudo code from

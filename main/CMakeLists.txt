@@ -10,7 +10,8 @@ set(ULP_APP_NAME ulp_${COMPONENT_NAME})
 # 2. Specify all assembly source files.
 #    Files should be placed into a separate directory (in this case, ulp/),
 #    which should not be added to COMPONENT_SRCS.
-set(ULP_S_SOURCES "ulp/main.S")
+set(ULP_S_SOURCES "ulp/stack.S" "ulp/i2c.S" "ulp/i2c-util.S" "ulp/i2c-veml3328.S" "ulp/main.S")
+
 #
 # 3. List all the component source files which include automatically
 #    generated ULP export file, ${ulp_app_name}.h:
@@ -19,4 +20,4 @@ set(ULP_EXP_DEP_SRCS "ulp_app.c")
 #
 # 4. Call function to build ULP binary and embed in project using the argument
 #    values above.
-ulp_embed_binary(${ULP_APP_NAME} ${ULP_S_SOURCES} ${ULP_EXP_DEP_SRCS})
+ulp_embed_binary(${ULP_APP_NAME} "${ULP_S_SOURCES}" "${ULP_EXP_DEP_SRCS}")
