@@ -2,7 +2,7 @@
 
 **Project based on [tomtor/ulp-i2c](https://github.com/tomtor/ulp-i2c.git)**
 
-STLM75 and VEML3328 is connected to GPIO 18 (sda) / 5 (scl) | LED connected at GPIO 21 
+STLM75 and VEML3328 is connected to GPIO 33 (sda) / 32 (scl) | LED connected at GPIO 2 
 
 
 [ESP-IDF version: v4.0 (CMake)](https://github.com/espressif/esp-idf/tree/release/v4.0)

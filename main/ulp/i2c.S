@@ -28,34 +28,37 @@ i2c_didInit:
 .global i2c_write_byte
 .global i2c_read_byte
 
+#define I2C_SCL          9 // RTC_GPIO_9 == GPIO_32
+#define I2C_SDA          8 // RTC_GPIO_8 == GPIO_33
+
 .macro I2C_delay
 	wait 10 // 38 // minimal 4.7us
 .endm
 
 .macro read_SCL // Return current level of SCL line, 0 or 1
-	READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + 9, 1) // RTC_GPIO_9 == GPIO_32
+	READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + I2C_SCL, 1)
 .endm
 
 .macro read_SDA // Return current level of SDA line, 0 or 1
-	READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + 8, 1) // RTC_GPIO_8 == GPIO_33
+	READ_RTC_REG(RTC_GPIO_IN_REG, RTC_GPIO_IN_NEXT_S + I2C_SDA, 1)
 .endm
 
 .macro set_SCL // Do not drive SCL (set pin high-impedance)
-	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TC_REG, RTC_GPIO_ENABLE_W1TC_S + 9, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TC_REG, RTC_GPIO_ENABLE_W1TC_S + I2C_SCL, 1, 1)
 .endm
 
 .macro clear_SCL // Actively drive SCL signal low
 	// Output mode
-	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + 9, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + I2C_SCL, 1, 1)
 .endm
 
 .macro set_SDA // Do not drive SDA (set pin high-impedance)
-	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TC_REG, RTC_GPIO_ENABLE_W1TC_S + 8, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TC_REG, RTC_GPIO_ENABLE_W1TC_S + I2C_SDA, 1, 1)
 .endm
 
 .macro clear_SDA // Actively drive SDA signal low
 	// Output mode
-	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + 8, 1, 1)
+	WRITE_RTC_REG(RTC_GPIO_ENABLE_W1TS_REG, RTC_GPIO_ENABLE_W1TS_S + I2C_SDA, 1, 1)
 .endm
 
 
@@ -66,8 +69,8 @@ i2c_start_cond:
 	move r0,1
 	st r0,r1,0
 // set GPIO to pull low when activated
-	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + 9, 1, 0)
-	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + 8, 1, 0)
+	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + I2C_SCL, 1, 0)
+	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + I2C_SDA, 1, 0)
 didInit:
 	move r2,i2c_started
 	ld r0,r2,0
