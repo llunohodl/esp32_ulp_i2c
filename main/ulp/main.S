@@ -8,6 +8,8 @@
 
 #include "stack.S"
 
+//https://esp32.com/viewtopic.php?t=3050
+
 
 #define GPIO_LED          12 // RTC_GPIO_12 == GPIO_2
 #define GPIO_AON          14 // RTC_GPIO_14 == GPIO_13
@@ -23,22 +25,50 @@
 	st r1,r2,\offset
 .endm
 
+.macro save_arch from to indx
+    move r2,\indx			//Get "index" address
+    ld r0,r2,0				//Load "index" value
+    //r0 - index | r2 - addr index
+	move r1,\to			    //Get "to" address
+	add r1,r1,r0			//Addres for current data in r1
+	//r0 - index | r1 - addr of cell | r2 - addr index
+	add r0,r0,1				//Update index
+	st 	r0,r2,0				//Save new index
+	move r0,\from			//Load "from" address to r2
+	//r0 - addr from | r1 - addr of cell
+	ld 	r2,r0,0             //Load "from" value
+	//r0 - addr from | r1 - addr of cell | r2 - value "from"
+	st r2,r1,0              //Store "from" to array
+.endm
+
+
+
+
+.set mes_max,10
+
 /* Define variables, which go into .bss section (zero-initialized data) */
 	.bss
 
 	.global stack
 stack:
-	.skip 100
+	.skip 100        //Stack depth 25
 	.global stackEnd
 stackEnd:
 	.long 0
 
-	.global r_hi, r_lo, v_hi, v_lo
+	.global r_hi, r_lo, v_hi, v_lo, mes_index, wake_count
 
 r_hi: .long 0
 r_lo: .long 0
 v_hi: .long 0
 v_lo: .long 0
+mes_index: .long 0
+wake_count: .long 0
+
+
+	.global mes_arr
+mes_arr:
+	.fill 4*10*mes_max
 
 	/* Code goes into .text section */
 	.text
@@ -48,13 +78,11 @@ entry:
 
 	// GPIO2 LED ON
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_AON, 1, 0)
-	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_LED, 1, 1)
+
 	// Wait 5ms for sensor computation
 	move r2,5
 	psr
 	jump waitMs
-
-    WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_LED, 1, 0)
 
 	psr
 	jump startVEML
@@ -78,6 +106,9 @@ entry:
 	save_dat adc_res_1,r_hi,0
 	save_dat adc_res_2,v_hi,0
 
+	save_arch adc_res_1,mes_arr,mes_index
+	save_arch adc_res_2,mes_arr,mes_index
+
 	//Select 390||10kOhm on high side
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_RLO, 1, 0)
 
@@ -91,22 +122,45 @@ entry:
 	save_dat adc_res_1,r_lo,0
 	save_dat adc_res_2,v_lo,0
 
+	save_arch adc_res_1,mes_arr,mes_index
+	save_arch adc_res_2,mes_arr,mes_index
+
 
 	// Wait 200ms for sensor computation
-	move r2,100
+	move r2,210
 	psr
 	jump waitMs
 
 	psr
 	jump stopSTLM
 
+	save_arch t_cur,mes_arr,mes_index //Save temperature
+
 	psr
 	jump stopVEML
 
-	// GPIO2 LED OFF
-
 	WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_AON, 1, 1)
-	jump wake_up
+
+	//Save light
+	save_arch l_clr,mes_arr,mes_index
+    save_arch l_i,mes_arr,mes_index
+	save_arch l_r,mes_arr,mes_index
+	save_arch l_g,mes_arr,mes_index
+	save_arch l_b,mes_arr,mes_index
+
+    WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_LED, 1, 1)
+	move r2,200
+	psr
+	jump waitMs
+    WRITE_RTC_REG(RTC_GPIO_OUT_REG, RTC_GPIO_OUT_DATA_S + GPIO_LED, 1, 0)
+
+
+	move r1,wake_count
+	ld r0,r1,0
+	sub r0,r0,1
+	jump wake_up,eq //End measurment
+	st r0,r1,0
+	halt
 
 	.global exit
 exit:
@@ -123,11 +177,6 @@ wake_up:
 	wake
 	//WRITE_RTC_FIELD(RTC_CNTL_STATE0_REG, RTC_CNTL_ULP_CP_SLP_TIMER_EN, 0)
 	halt
-
-
-	/* Wake up the SoC, end program */
-	//wake
-	//halt
 
 // Wait for r2 milliseconds
 waitMs:

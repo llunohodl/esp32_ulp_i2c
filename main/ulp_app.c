@@ -107,10 +107,14 @@ static void init_ulp_program()
 #define r_lo ((uint16_t)ulp_r_lo)
 #define v_hi ((uint16_t)ulp_v_hi)
 #define v_lo ((uint16_t)ulp_v_lo)
+extern uint32_t ulp_mes_index;
+extern uint32_t ulp_wake_count;
+
 
 static void print_status(){
-    ESP_LOGI(TAG, "C: %06d IR: %06d", l_clr, l_i);
-    ESP_LOGI(TAG, "R: %06d G: %06d B: %06d", l_r, l_g,l_b);
+    ESP_LOGI(TAG,"Rhi %d Vhi %d",r_hi,v_hi);
+    ESP_LOGI(TAG,"Rlo %d Vlo %d",r_lo,v_lo);
+
     int16_t tm=t_cur;
     tm>>=7;
     if(tm&(1 << 8)){
@@ -118,8 +122,16 @@ static void print_status(){
     }
     tm*=5;
     ESP_LOGI(TAG, "T: %0.1f", ((float )tm) / 10.0);
-    ESP_LOGI(TAG,"Rhi %d Rlo %d",r_hi,r_lo);
-    ESP_LOGI(TAG,"Vhi %d Vlo %d",v_hi,v_lo);
+
+    ESP_LOGI(TAG, "C: %06d IR: %06d", l_clr, l_i);
+    ESP_LOGI(TAG, "R: %06d G: %06d B: %06d", l_r, l_g,l_b);
+
+
+    for(int i=0;i<(uint16_t)ulp_mes_index;i++){
+        ESP_LOGI(TAG, "mes[%02d] = %d", i,(uint16_t)(&ulp_mes_arr)[i]);
+    }
+    ESP_LOGI(TAG, "index = %d", (uint16_t)ulp_mes_index);
+
 }
 
 void app_main()
@@ -137,6 +149,7 @@ void app_main()
     printf("Entering deep sleep\n\n");
 
     ESP_ERROR_CHECK( esp_sleep_enable_ulp_wakeup() );
-
+    ulp_mes_index = 0;
+    ulp_wake_count = 4;
     esp_deep_sleep_start();
 }
